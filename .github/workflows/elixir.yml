@@ -1,0 +1,43 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: Elixir CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+env:
+  MIX_ENV: test
+  PW_TIMEOUT: 4000
+
+jobs:
+  build:
+    name: Build and test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup languages
+        uses: jdx/mise-action@v2
+      - name: Install dependencies
+        run: mix do deps.get, deps.compile
+      - name: Check Formatting
+        run: mix format --check-formatted
+      - name: Check Credo
+        run: mix credo
+      - name: Compiles without warnings
+        run: mix compile --warnings-as-errors
+      - name: Install JS dependencies
+        run: npm ci --prefix assets
+      - name: Further setup
+        run: mix setup
+      - name: Run tests
+        run: mix test --warnings-as-errors
