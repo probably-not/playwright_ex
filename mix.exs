@@ -83,7 +83,6 @@ defmodule PlaywrightEx.MixProject do
         "format --check-formatted",
         "credo",
         "compile --warnings-as-errors",
-        "assets.build",
         "test --warnings-as-errors"
       ]
     ]
