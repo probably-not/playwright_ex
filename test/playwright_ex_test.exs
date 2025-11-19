@@ -44,7 +44,7 @@ defmodule PlaywrightExTest do
   end
 
   defp on_exit_open_trace(tracing_id, tmp_dir) do
-    {:ok, _} = Tracing.tracing_start(tracing_id, timeout: @timeout)
+    {:ok, _} = Tracing.tracing_start(tracing_id, screenshots: true, snapshots: true, sources: true, timeout: @timeout)
     {:ok, _} = Tracing.tracing_start_chunk(tracing_id, timeout: @timeout)
 
     on_exit(fn ->
