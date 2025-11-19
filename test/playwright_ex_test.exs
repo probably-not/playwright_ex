@@ -20,12 +20,12 @@ defmodule PlaywrightExTest do
     if !System.get_env("CI"), do: on_exit_open_trace(context.tracing.guid, tmp_dir)
 
     {:ok, %{main_frame: frame}} = BrowserContext.new_page(context.guid, timeout: @timeout)
-    {:ok, _} = Frame.goto(frame.guid, "https://elixir-lang.org/", timeout: @timeout)
+    {:ok, _} = Frame.goto(frame.guid, url: "https://elixir-lang.org/", timeout: @timeout)
 
     assert_has(frame.guid, Selector.role("heading", "Elixir is a dynamic, functional language"))
     refute_has(frame.guid, Selector.role("heading", "I made this up"))
 
-    {:ok, _} = Frame.click(frame.guid, Selector.link("Install"), timeout: @timeout)
+    {:ok, _} = Frame.click(frame.guid, selector: Selector.link("Install"), timeout: @timeout)
     assert_has(frame.guid, Selector.link("macOS"))
   end
 
