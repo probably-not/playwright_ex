@@ -243,7 +243,8 @@ defmodule PlaywrightEx.Frame do
       expression: [type: :string, required: true],
       selector: [type: :string],
       expected_text: [type: :any],
-      expected_number: [type: :any]
+      expected_number: [type: :any],
+      expression_arg: [type: :any]
     )
 
   @doc """
