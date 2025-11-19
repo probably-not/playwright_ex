@@ -68,7 +68,18 @@ defmodule PlaywrightEx.MixProject do
       extras: [
         "CHANGELOG.md": [title: "Changelog"]
       ],
-      nest_modules_by_prefix: [PlaywrightEx]
+      nest_modules_by_prefix: [PlaywrightEx],
+      filter_modules: fn _, metadata ->
+        not String.contains?(to_string(metadata.source_path), "/processes/")
+      end,
+      groups_for_modules: [
+        Channels:
+          for(
+            file <- File.ls!("lib/playwright_ex/channels"),
+            do: "PlaywrightEx.#{file |> Path.basename(".ex") |> Macro.camelize()}"
+          ),
+        Other: [PlaywrightEx.JsLogger, PlaywrightEx.Supervisor]
+      ]
     ]
   end
 

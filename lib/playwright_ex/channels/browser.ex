@@ -8,22 +8,22 @@ defmodule PlaywrightEx.Browser do
   - https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/client/browser.ts
   """
 
-  import PlaywrightEx.Connection, only: [post: 2]
-  import PlaywrightEx.Result, only: [from_response: 2]
+  alias PlaywrightEx.ChannelResponse
+  alias PlaywrightEx.Connection
 
   def new_context(browser_id, opts \\ []) do
     params = Map.new(opts)
 
     %{guid: browser_id, method: :new_context, params: params}
-    |> post(opts[:timeout])
-    |> from_response(& &1.result.context.guid)
+    |> Connection.send(opts[:timeout])
+    |> ChannelResponse.unwrap_create(:context)
   end
 
   def close(browser_id, opts \\ []) do
     params = Map.new(opts)
 
     %{guid: browser_id, method: :close, params: params}
-    |> post(opts[:timeout])
-    |> from_response(& &1)
+    |> Connection.send(opts[:timeout])
+    |> ChannelResponse.unwrap(& &1)
   end
 end

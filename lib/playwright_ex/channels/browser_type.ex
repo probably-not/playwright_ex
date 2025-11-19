@@ -8,12 +8,12 @@ defmodule PlaywrightEx.BrowserType do
   - https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/client/browserType.ts
   """
 
-  import PlaywrightEx.Connection, only: [post: 2]
-  import PlaywrightEx.Result, only: [from_response: 2]
+  alias PlaywrightEx.ChannelResponse
+  alias PlaywrightEx.Connection
 
   def launch(type_id, opts \\ []) do
     %{guid: type_id, method: :launch, params: Map.new(opts)}
-    |> post(opts[:timeout])
-    |> from_response(& &1.result.browser.guid)
+    |> Connection.send(opts[:timeout])
+    |> ChannelResponse.unwrap_create(:browser)
   end
 end

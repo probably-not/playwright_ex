@@ -8,13 +8,13 @@ defmodule PlaywrightEx.Page do
   - https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/client/page.ts
   """
 
-  import PlaywrightEx.Connection, only: [post: 2]
-  import PlaywrightEx.Result, only: [from_response: 2]
+  alias PlaywrightEx.ChannelResponse
+  alias PlaywrightEx.Connection
 
   def update_subscription(page_id, opts \\ []) do
     %{guid: page_id, method: :update_subscription, params: Map.new(opts)}
-    |> post(opts[:timeout])
-    |> from_response(& &1)
+    |> Connection.send(opts[:timeout])
+    |> ChannelResponse.unwrap(& &1)
   end
 
   def screenshot(page_id, opts \\ []) do
@@ -25,7 +25,7 @@ defmodule PlaywrightEx.Page do
       |> Map.new()
 
     %{guid: page_id, method: :screenshot, params: params}
-    |> post(opts[:timeout])
-    |> from_response(& &1.result.binary)
+    |> Connection.send(opts[:timeout])
+    |> ChannelResponse.unwrap(& &1.binary)
   end
 end

@@ -20,16 +20,17 @@ defmodule PlaywrightEx do
           npm --prefix assets exec -- playwright install chromium --with-deps
 
   3. Start connection (or add to supervision tree)
-          {:ok, _} = PlaywrightEx.Supervisor.start_link(timeout: timeout, runner: "npx", assets_dir: "assets")
+          {:ok, _} = PlaywrightEx.Supervisor.start_link(timeout: 1000)
 
   4. Use it
-          {:ok, browser_id} = PlaywrightEx.launch_browser(:chromium, timeout: 1000)
-          {:ok, context_id} = Browser.new_context(browser_id, timeout: 1000)
+          alias PlaywrightEx.{Browser, BrowserContext, Frame}
 
-          {:ok, page_id} = BrowserContext.new_page(context_id, timeout: 1000)
-          frame_id = PlaywrightEx.initializer(page_id).main_frame.guid
-          {:ok, _} = Frame.goto(frame_id, "https://elixir-lang.org/", timeout: 1000)
-          {:ok, _} = Frame.click(frame_id, Selector.link("Install"), timeout: 1000)
+          {:ok, browser} = PlaywrightEx.launch_browser(:chromium, timeout: 1000)
+          {:ok, context} = Browser.new_context(browser.guid, timeout: 1000)
+
+          {:ok, %{main_frame: frame}} = BrowserContext.new_page(context.guid, timeout: 1000)
+          {:ok, _} = Frame.goto(frame.guid, "https://elixir-lang.org/", timeout: 1000)
+          {:ok, _} = Frame.click(frame.guid, Selector.link("Install"), timeout: 1000)
 
 
   ## References:
@@ -46,24 +47,25 @@ defmodule PlaywrightEx do
   alias PlaywrightEx.BrowserType
   alias PlaywrightEx.Connection
 
-  @type browser_type :: atom()
-  @type launch_browser_opts :: Keyword.t()
-  @type guid :: String.t()
-  @type msg :: map()
-
-  @spec launch_browser(browser_type(), launch_browser_opts()) :: {:ok, guid()} | {:error, any()}
+  @doc """
+  Launch a browser.
+  """
   def launch_browser(type, opts) do
-    type_id = "Playwright" |> initializer!() |> Map.fetch!(type) |> Map.fetch!(:guid)
+    type_id = "Playwright" |> Connection.initializer!() |> Map.fetch!(type) |> Map.fetch!(:guid)
     BrowserType.launch(type_id, opts)
   end
 
-  @spec subscribe(guid()) :: :ok
-  @spec subscribe(pid(), guid()) :: :ok
+  @doc """
+  Subscribe to playwright responses concerning a resource, identified by its `guid`, or its descendants.
+  Messages in the format `{:playwright_msg, %{} = msg}` will be sent to `pid`.
+  """
   defdelegate subscribe(pid \\ self(), guid), to: Connection
 
-  @spec post(msg(), timeout()) :: msg()
-  defdelegate post(msg, timeout), to: Connection
+  @doc """
+  Send message to playwright.
 
-  @spec initializer!(guid()) :: map()
-  defdelegate initializer!(guid), to: Connection
+  Don't use this! Prefer `Channels` functions.
+  If a function is missing, consider [opening a PR](https://github.com/ftes/playwright_ex/pulls) to add it.
+  """
+  defdelegate send(msg, timeout), to: Connection
 end

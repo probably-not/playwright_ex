@@ -9,6 +9,8 @@ defmodule PlaywrightEx.Connection do
   """
   @behaviour :gen_statem
 
+  import Kernel, except: [send: 2]
+
   alias PlaywrightEx.PortServer
 
   @timeout_grace_factor 1.5
@@ -17,7 +19,7 @@ defmodule PlaywrightEx.Connection do
   defstruct config: %{js_logger: nil},
             initializers: %{},
             guid_subscribers: %{},
-            posts_in_flight: %{}
+            pending_response: %{}
 
   @name __MODULE__
 
@@ -50,7 +52,7 @@ defmodule PlaywrightEx.Connection do
   Post a message and await the response.
   Wait for an additional grace period after the playwright timeout.
   """
-  def post(%{guid: _, method: _} = msg, timeout) when is_integer(timeout) do
+  def send(%{guid: _, method: _} = msg, timeout) when is_integer(timeout) do
     msg =
       msg
       |> Enum.into(%{params: %{}, metadata: %{}})
@@ -59,7 +61,7 @@ defmodule PlaywrightEx.Connection do
 
     call_timeout = max(@min_genserver_timeout, round(timeout * @timeout_grace_factor))
 
-    :gen_statem.call(@name, {:post, msg}, call_timeout)
+    :gen_statem.call(@name, {:send, msg}, call_timeout)
   end
 
   @doc """
@@ -95,9 +97,9 @@ defmodule PlaywrightEx.Connection do
   def pending({:call, _from}, _msg, _data), do: {:keep_state_and_data, [:postpone]}
 
   @doc false
-  def started({:call, from}, {:post, msg}, data) do
+  def started({:call, from}, {:send, msg}, data) do
     PortServer.post(msg)
-    {:keep_state, put_in(data.posts_in_flight[msg.id], from)}
+    {:keep_state, put_in(data.pending_response[msg.id], from)}
   end
 
   def started({:call, from}, {:initializer, guid}, data) do
@@ -125,11 +127,11 @@ defmodule PlaywrightEx.Connection do
     :keep_state_and_data
   end
 
-  def started(:cast, {:msg, msg}, data) when is_map_key(data.posts_in_flight, msg.id) do
-    {from, posts_in_flight} = Map.pop(data.posts_in_flight, msg.id)
+  def started(:cast, {:msg, msg}, data) when is_map_key(data.pending_response, msg.id) do
+    {from, pending_response} = Map.pop(data.pending_response, msg.id)
     :gen_statem.reply(from, msg)
 
-    {:keep_state, %{data | posts_in_flight: posts_in_flight}}
+    {:keep_state, %{data | pending_response: pending_response}}
   end
 
   def started(:cast, {:msg, msg}, data) do
