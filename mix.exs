@@ -65,6 +65,7 @@ defmodule PlaywrightEx.MixProject do
   defp docs do
     [
       main: "PlaywrightEx",
+      source_ref: "v#{@version}",
       extras: [
         "CHANGELOG.md": [title: "Changelog"]
       ],
