@@ -55,8 +55,8 @@ defmodule PlaywrightExTest do
       File.cp!(zip_file.absolute_path, trace_file)
 
       spawn(fn ->
-        args = ["playwright", "show-trace", trace_file]
-        System.cmd("npx", args, cd: "assets")
+        executable = :playwright_ex |> Application.fetch_env!(:executable) |> Path.expand()
+        System.cmd(executable, ["show-trace", trace_file])
       end)
     end)
   end

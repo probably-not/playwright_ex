@@ -1,3 +1,5 @@
 import Config
 
-config :playwright_ex, timeout: String.to_integer(System.get_env("PW_TIMEOUT", "500"))
+config :playwright_ex,
+  executable: "assets/node_modules/playwright/cli.js",
+  timeout: String.to_integer(System.get_env("PW_TIMEOUT", "1000"))

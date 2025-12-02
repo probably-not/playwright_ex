@@ -15,11 +15,10 @@ defmodule PlaywrightEx do
           # mix.exs
           {:playwright_ex, "~> 0.2"}
 
-  2. Install playwright and browser
-          npm --prefix assets i playwright
-          npm --prefix assets exec -- playwright install chromium --with-deps
+  2. Ensure `playwright` is installed (executable in `$PATH` or installed via `npm`)
 
   3. Start connection (or add to supervision tree)
+          # if installed via npm or similar add `executable: "assets/node_modules/playwright/cli.js"`
           {:ok, _} = PlaywrightEx.Supervisor.start_link(timeout: 1000)
 
   4. Use it

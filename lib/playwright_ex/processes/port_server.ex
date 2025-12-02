@@ -28,7 +28,7 @@ defmodule PlaywrightEx.PortServer do
   Start the PortServer and link it to the connection process.
   """
   def start_link(opts) do
-    opts = Keyword.validate!(opts, [:runner, :assets_dir])
+    opts = Keyword.validate!(opts, [:executable])
     GenServer.start_link(__MODULE__, Map.new(opts), name: @name)
   end
 
@@ -40,15 +40,8 @@ defmodule PlaywrightEx.PortServer do
   end
 
   @impl GenServer
-  def init(%{runner: runner, assets_dir: assets_dir}) do
-    port =
-      Port.open({:spawn_executable, runner}, [
-        :binary,
-        :stderr_to_stdout,
-        args: ["playwright", "run-driver"],
-        cd: assets_dir
-      ])
-
+  def init(%{executable: executable}) do
+    port = Port.open({:spawn_executable, executable}, [:binary, :stderr_to_stdout, args: ["run-driver"]])
     {:ok, %__MODULE__{port: port}}
   end
 

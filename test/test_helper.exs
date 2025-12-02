@@ -1,3 +1,2 @@
 ExUnit.start()
-timeout = Application.fetch_env!(:playwright_ex, :timeout)
-{:ok, _} = PlaywrightEx.Supervisor.start_link(timeout: timeout)
+{:ok, _} = PlaywrightEx.Supervisor.start_link(Application.get_all_env(:playwright_ex))
