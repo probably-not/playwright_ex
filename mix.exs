@@ -75,10 +75,11 @@ defmodule PlaywrightEx.MixProject do
       end,
       groups_for_modules: [
         Channels:
-          for(
-            file <- File.ls!("lib/playwright_ex/channels"),
-            do: "PlaywrightEx.#{file |> Path.basename(".ex") |> Macro.camelize()}"
-          ),
+          if File.exists?("lib") do
+            for file <- File.ls!("lib/playwright_ex/channels") do
+              "PlaywrightEx.#{file |> Path.basename(".ex") |> Macro.camelize()}"
+            end
+          end,
         Other: [PlaywrightEx.JsLogger, PlaywrightEx.Supervisor]
       ]
     ]
