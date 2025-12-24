@@ -7,10 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.3.0] 2025-12-24
 ### Added
-- `PlaywrightEx.Page.mouse_move/2`, `mouse_down/2`, `mouse_up/2` for low-level mouse control. Commit [530e362] @nathanl
-- `PlaywrightEx.Frame.hover/2` for hovering over elements (supports manual drag operations). Commit [530e362] @nathanl
+- `PlaywrightEx.Page.mouse_move/2`, `mouse_down/2`, `mouse_up/2` for low-level mouse control. Commit [530e362], [@nathanl]
+- `PlaywrightEx.Frame.hover/2` for hovering over elements (supports manual drag operations). Commit [530e362], [@nathanl]
 ### Fixed
-- Serialization of args given to `PlaywrightEx.Frame.evaluate/2`. Commit [fecf965] @nathanl
+- Serialization of args given to `PlaywrightEx.Frame.evaluate/2`. Commit [fecf965], [@nathanl]
 
 ## [0.2.1] 2025-11-28
 ### Changed
@@ -33,6 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 - First draft
 
+[@nathanl]: https://github.com/nathanl
 
 [530e362]: https://github.com/ftes/playwright_ex/commit/530e36
 [fecf965]: https://github.com/ftes/playwright_ex/commit/fecf965
