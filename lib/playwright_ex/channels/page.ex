@@ -76,8 +76,16 @@ defmodule PlaywrightEx.Page do
   schema =
     NimbleOptions.new!(
       timeout: PlaywrightEx.Channel.timeout_opt(),
-      x: [type: {:or, [:integer, :float]}, required: true, doc: "`x` coordinate relative to the main frame's viewport in CSS pixels."],
-      y: [type: {:or, [:integer, :float]}, required: true, doc: `y` coordinate relative to the main frame's viewport in CSS pixels.]
+      x: [
+        type: {:or, [:integer, :float]},
+        required: true,
+        doc: "`x` coordinate relative to the main frame's viewport in CSS pixels."
+      ],
+      y: [
+        type: {:or, [:integer, :float]},
+        required: true,
+        doc: "`y` coordinate relative to the main frame's viewport in CSS pixels."
+      ]
     )
 
   @doc """
