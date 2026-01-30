@@ -2,7 +2,6 @@ defmodule PlaywrightExTest do
   use PlaywrightExCase, async: true
 
   alias PlaywrightEx.Frame
-  alias PlaywrightEx.Page
   alias PlaywrightEx.Selector
   alias PlaywrightEx.Tracing
 
