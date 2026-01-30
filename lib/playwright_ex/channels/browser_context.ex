@@ -167,7 +167,7 @@ defmodule PlaywrightEx.BrowserContext do
   @schema schema
   @type register_selector_engine_opt :: unquote(NimbleOptions.option_typespec(schema))
   @spec register_selector_engine(PlaywrightEx.guid(), [register_selector_engine_opt() | PlaywrightEx.unknown_opt()]) ::
-          :ok | {:error, any()}
+          {:ok, any()} | {:error, any()}
   def register_selector_engine(context_id, opts \\ []) do
     {timeout, opts} = opts |> PlaywrightEx.Channel.validate_known!(@schema) |> Keyword.pop!(:timeout)
     params = opts |> Map.new() |> Map.update!(:selector_engine, &Map.new/1)
@@ -197,7 +197,7 @@ defmodule PlaywrightEx.BrowserContext do
   """
   @schema schema
   @type close_opt :: unquote(NimbleOptions.option_typespec(schema))
-  @spec close(PlaywrightEx.guid(), [close_opt() | PlaywrightEx.unknown_opt()]) :: :ok | {:error, any()}
+  @spec close(PlaywrightEx.guid(), [close_opt() | PlaywrightEx.unknown_opt()]) :: {:ok, any()} | {:error, any()}
   def close(browser_id, opts \\ []) do
     {timeout, opts} = opts |> PlaywrightEx.Channel.validate_known!(@schema) |> Keyword.pop!(:timeout)
 

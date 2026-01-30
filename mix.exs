@@ -24,6 +24,7 @@ defmodule PlaywrightEx.MixProject do
         plt_local_path: "priv/plts/project.plt",
         plt_core_path: "priv/plts/core.plt",
         plt_add_apps: [:ex_unit]
+        # flags: [:specdiffs]
       ]
     ]
   end

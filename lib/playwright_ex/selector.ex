@@ -39,14 +39,14 @@ defmodule PlaywrightEx.Selector do
   @spec has(t(), t()) :: t()
   def has(left, right), do: concat(left, "internal:has=#{JSON.encode!(right)}")
 
-  @spec text(String.t()) :: t()
-  @spec text(String.t(), exact_opts) :: t()
+  @spec text(nil | String.t()) :: t()
+  @spec text(nil | String.t(), exact_opts) :: t()
   def text(text, opts \\ [])
   def text(nil, _opts), do: :none
   def text(text, opts), do: "internal:text=\"#{text}\"#{exact_suffix(opts)}"
 
-  @spec label(String.t()) :: t()
-  @spec label(String.t(), exact_opts) :: t()
+  @spec label(nil | String.t()) :: t()
+  @spec label(nil | String.t(), exact_opts) :: t()
   def label(label, opts \\ [])
   def label(nil, _opts), do: :none
   def label(label, opts), do: "internal:label=\"#{label}\"#{exact_suffix(opts)}"
@@ -55,20 +55,20 @@ defmodule PlaywrightEx.Selector do
   def at(nil), do: :none
   def at(at), do: "nth=#{at}"
 
-  @spec link(String.t()) :: t()
-  @spec link(String.t(), exact_opts) :: t()
+  @spec link(String.t()) :: built()
+  @spec link(String.t(), exact_opts) :: built()
   def link(text, opts \\ []), do: role("link", text, opts)
 
-  @spec button(String.t()) :: t()
-  @spec button(String.t(), exact_opts) :: t()
+  @spec button(String.t()) :: built()
+  @spec button(String.t(), exact_opts) :: built()
   def button(text, opts \\ []), do: role("button", text, opts)
 
-  @spec menuitem(String.t()) :: t()
-  @spec menuitem(String.t(), exact_opts) :: t()
+  @spec menuitem(String.t()) :: built()
+  @spec menuitem(String.t(), exact_opts) :: built()
   def menuitem(text, opts \\ []), do: role("menuitem", text, opts)
 
-  @spec role(String.t(), String.t()) :: t()
-  @spec role(String.t(), String.t(), exact_opts) :: t()
+  @spec role(String.t(), String.t()) :: built()
+  @spec role(String.t(), String.t(), exact_opts) :: built()
   def role(role, text, opts \\ []), do: "internal:role=#{role}[name=\"#{text}\"#{exact_suffix(opts)}]"
 
   @spec css(nil | String.t() | [String.t()]) :: t()
