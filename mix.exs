@@ -19,7 +19,12 @@ defmodule PlaywrightEx.MixProject do
       name: "PlaywrightEx",
       source_url: @source_url,
       docs: docs(),
-      aliases: aliases()
+      aliases: aliases(),
+      dialyzer: [
+        plt_local_path: "priv/plts/project.plt",
+        plt_core_path: "priv/plts/core.plt",
+        plt_add_apps: [:ex_unit]
+      ]
     ]
   end
 
@@ -36,7 +41,8 @@ defmodule PlaywrightEx.MixProject do
       {:nimble_options, "~> 1.1"},
       {:ex_doc, "~> 0.39", only: :dev, runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
-      {:styler, "~> 1.3", only: [:dev, :test], runtime: false}
+      {:styler, "~> 1.3", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
     ]
   end
 
@@ -96,6 +102,7 @@ defmodule PlaywrightEx.MixProject do
         "format --check-formatted",
         "credo",
         "compile --warnings-as-errors",
+        "dialyzer --format github --format dialyxir",
         "test --warnings-as-errors"
       ]
     ]

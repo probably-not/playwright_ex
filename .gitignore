@@ -22,4 +22,7 @@ erl_crash.dump
 # Ignore package tarball (built via "mix hex.build").
 playwright_ex-*.tar
 
+# Dialyzer PLT files.
+/priv/plts/
+
 node_modules

@@ -55,7 +55,7 @@ defmodule PlaywrightEx do
   ## Options
   #{NimbleOptions.docs(BrowserType.launch_opts_schema())}
   """
-  @spec launch_browser(atom(), [[BrowserType.launch_opt() | unknown_opt()]]) :: {:ok, %{guid: guid()}} | {:error, any()}
+  @spec launch_browser(atom(), [BrowserType.launch_opt() | unknown_opt()]) :: {:ok, %{guid: guid()}} | {:error, any()}
   def launch_browser(type, opts) do
     type_id = "Playwright" |> Connection.initializer!() |> Map.fetch!(type) |> Map.fetch!(:guid)
     BrowserType.launch(type_id, opts)
