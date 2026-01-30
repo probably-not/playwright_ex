@@ -8,7 +8,8 @@ defmodule PlaywrightEx.Supervisor do
   def start_link(opts \\ []) do
     opts =
       opts
-      |> Keyword.validate!([:timeout, executable: "playwright", js_logger: nil])
+      |> Keyword.drop(~w(tests)a)
+      |> Keyword.validate!([:timeout, :fail_on_unknown_opts, executable: "playwright", js_logger: nil])
       |> validate_executable!()
 
     Supervisor.start_link(__MODULE__, Map.new(opts), name: __MODULE__)
