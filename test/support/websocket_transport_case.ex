@@ -26,12 +26,14 @@ defmodule WebsocketTransportCase do
   # Use a longer timeout for websocket tests since container operations are slower
   @timeout 30_000
 
-  @playwright_version "assets/node_modules/playwright/package.json"
-                      |> File.read!()
-                      |> JSON.decode!()
-                      |> Map.fetch!("version")
+  defp playwright_version do
+    "assets/node_modules/playwright/package.json"
+    |> File.read!()
+    |> JSON.decode!()
+    |> Map.fetch!("version")
+  end
 
-  @playwright_image "mcr.microsoft.com/playwright:v#{@playwright_version}-noble"
+  defp playwright_image, do: "mcr.microsoft.com/playwright:v#{playwright_version()}-noble"
 
   using(_opts) do
     quote do
@@ -48,11 +50,11 @@ defmodule WebsocketTransportCase do
 
     # Create and start the Playwright container
     config =
-      @playwright_image
+      playwright_image()
       |> Testcontainers.Container.new()
       |> Testcontainers.Container.with_exposed_port(3000)
       |> Testcontainers.Container.with_cmd(
-        ~w(npx -y playwright@#{@playwright_version} run-server --port 3000 --host 0.0.0.0)
+        ~w(npx -y playwright@#{playwright_version()} run-server --port 3000 --host 0.0.0.0)
       )
       |> Testcontainers.Container.with_waiting_strategy(Testcontainers.PortWaitStrategy.new("localhost", 3000, 30_000))
 
