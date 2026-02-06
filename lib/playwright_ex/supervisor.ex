@@ -20,7 +20,6 @@ defmodule PlaywrightEx.Supervisor do
 
   ## Limitations of WebSocket connection to remote server
   - Single browser type - only the one you set via `ws_endpoint` (the browser type passed to `PlaywrightEx.launch_browser/2` is ignored)
-  - Tracing is currently broken, because the trace artifact needs to be fetched differently from the remote server.
   """
 
   use Supervisor

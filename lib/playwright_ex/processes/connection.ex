@@ -68,6 +68,13 @@ defmodule PlaywrightEx.Connection do
     :gen_statem.call(name, {:initializer, guid})
   end
 
+  @doc """
+  Returns `true` if the connection uses a remote (WebSocket) transport.
+  """
+  def remote?(name) do
+    :gen_statem.call(name, :remote?)
+  end
+
   # Internal
 
   @impl :gen_statem
@@ -107,6 +114,11 @@ defmodule PlaywrightEx.Connection do
 
   def started({:call, from}, {:initializer, guid}, data) do
     {:keep_state_and_data, [{:reply, from, Map.fetch!(data.initializers, guid)}]}
+  end
+
+  def started({:call, from}, :remote?, data) do
+    {transport_module, _} = data.config.transport
+    {:keep_state_and_data, [{:reply, from, transport_module != PlaywrightEx.PortTransport}]}
   end
 
   def started(:cast, {:subscribe, recipient, guid}, data) do
