@@ -608,9 +608,29 @@ defmodule PlaywrightEx.Frame do
     {connection, opts} = opts |> PlaywrightEx.Channel.validate_known!(@schema) |> Keyword.pop!(:connection)
     {timeout, opts} = Keyword.pop!(opts, :timeout)
 
+    params = opts |> Map.new() |> maybe_convert_to_payloads(connection)
+
     connection
-    |> Connection.send(%{guid: frame_id, method: :set_input_files, params: Map.new(opts)}, timeout)
+    |> Connection.send(%{guid: frame_id, method: :set_input_files, params: params}, timeout)
     |> ChannelResponse.unwrap(& &1)
+  end
+
+  defp maybe_convert_to_payloads(%{local_paths: local_paths} = params, connection) do
+    if Connection.remote?(connection) do
+      paths = local_paths |> List.wrap() |> Enum.map(&Path.expand/1)
+
+      payloads =
+        Enum.map(paths, fn path ->
+          %{
+            name: Path.basename(path),
+            buffer: path |> File.read!() |> Base.encode64()
+          }
+        end)
+
+      params |> Map.delete(:local_paths) |> Map.put(:payloads, payloads)
+    else
+      params
+    end
   end
 
   schema =
