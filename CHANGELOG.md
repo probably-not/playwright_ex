@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
+## [0.4.0] 2026-02-09
+### Added
+- Support remote Playwright server via websocket. Commit [63fc6eb], [@carsoncall]
+
 ## [0.3.2] 2026-01-30
 ### Fixed
 - Typespec bugs. Commit [7275ef9]
@@ -42,8 +46,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - First draft
 
 [@nathanl]: https://github.com/nathanl
+[@carsoncall]: https://github.com/carsoncall
 
 [530e362]: https://github.com/ftes/playwright_ex/commit/530e36
 [fecf965]: https://github.com/ftes/playwright_ex/commit/fecf965
 [545bc4d]: https://github.com/ftes/playwright_ex/commit/545bc4d
 [7275ef9]: https://github.com/ftes/playwright_ex/commit/7275ef9
+[63fc6eb]: https://github.com/ftes/playwright_ex/commit/63fc6eb
