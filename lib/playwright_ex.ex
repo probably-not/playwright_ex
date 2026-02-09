@@ -13,7 +13,7 @@ defmodule PlaywrightEx do
   ## Getting started
   1. Add dependency
           # mix.exs
-          {:playwright_ex, "~> 0.2"}
+          {:playwright_ex, "~> 0.4"}
 
   2. Ensure `playwright` is installed (executable in `$PATH` or installed via `npm`)
 
