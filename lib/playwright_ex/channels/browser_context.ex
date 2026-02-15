@@ -221,6 +221,7 @@ defmodule PlaywrightEx.BrowserContext do
 
   schema =
     NimbleOptions.new!(
+      connection: PlaywrightEx.Channel.connection_opt(),
       timeout: PlaywrightEx.Channel.timeout_opt(),
       content: [
         type: :string,
@@ -254,10 +255,11 @@ defmodule PlaywrightEx.BrowserContext do
   @spec add_init_script(PlaywrightEx.guid(), [add_init_script_opt() | PlaywrightEx.unknown_opt()]) ::
           {:ok, any()} | {:error, any()}
   def add_init_script(context_id, opts \\ []) do
-    {timeout, opts} = opts |> PlaywrightEx.Channel.validate_known!(@schema) |> Keyword.pop!(:timeout)
+    {connection, opts} = opts |> PlaywrightEx.Channel.validate_known!(@schema) |> Keyword.pop!(:connection)
+    {timeout, opts} = Keyword.pop!(opts, :timeout)
 
-    %{guid: context_id, method: :addInitScript, params: Map.new(opts)}
-    |> Connection.send(timeout)
+    connection
+    |> Connection.send(%{guid: context_id, method: :addInitScript, params: Map.new(opts)}, timeout)
     |> ChannelResponse.unwrap(& &1)
   end
 end
