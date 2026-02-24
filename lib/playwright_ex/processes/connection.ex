@@ -16,7 +16,6 @@ defmodule PlaywrightEx.Connection do
 
   defstruct config: %{js_logger: nil, transport: {nil, nil}},
             initializers: %{},
-            guid_subscribers: %{},
             pending_response: %{}
 
   @doc false
@@ -26,7 +25,7 @@ defmodule PlaywrightEx.Connection do
 
   @doc false
   def start_link(opts) do
-    opts = Keyword.validate!(opts, [:timeout, :transport, :name, js_logger: nil])
+    opts = Keyword.validate!(opts, [:timeout, :transport, :name, :pg_scope, js_logger: nil])
     timeout = Keyword.fetch!(opts, :timeout)
     name = Keyword.fetch!(opts, :name)
 
@@ -34,10 +33,17 @@ defmodule PlaywrightEx.Connection do
   end
 
   @doc """
-  Subscribe to messages for a guid and its descendants.
+  Subscribe to messages for a guid.
   """
   def subscribe(name, pid \\ self(), guid) do
     :gen_statem.cast(name, {:subscribe, pid, guid})
+  end
+
+  @doc """
+  Unsubscribe from messages for a guid.
+  """
+  def unsubscribe(name, pid \\ self(), guid) do
+    :gen_statem.cast(name, {:unsubscribe, pid, guid})
   end
 
   @doc false
@@ -122,7 +128,20 @@ defmodule PlaywrightEx.Connection do
   end
 
   def started(:cast, {:subscribe, recipient, guid}, data) do
-    {:keep_state, update_in(data.guid_subscribers[guid], &[recipient | &1 || []])}
+    group = pg_group(guid)
+
+    if recipient in :pg.get_members(data.config.pg_scope, group) do
+      :ok
+    else
+      :ok = :pg.join(data.config.pg_scope, group, recipient)
+    end
+
+    :keep_state_and_data
+  end
+
+  def started(:cast, {:unsubscribe, recipient, guid}, data) do
+    _ = :pg.leave(data.config.pg_scope, pg_group(guid), recipient)
+    :keep_state_and_data
   end
 
   def started(:cast, {:playwright_msg, %{method: :page_error} = msg}, data) do
@@ -150,7 +169,7 @@ defmodule PlaywrightEx.Connection do
   end
 
   def started(:cast, {:playwright_msg, msg}, data) do
-    {:keep_state, data |> handle_create(msg) |> handle_dispose(msg) |> notify_subscribers(msg)}
+    {:keep_state, data |> handle_create(msg) |> notify_subscribers(msg) |> handle_dispose(msg)}
   end
 
   defp handle_create(data, %{method: :__create__} = msg) do
@@ -162,17 +181,32 @@ defmodule PlaywrightEx.Connection do
   defp handle_dispose(data, %{method: :__dispose__} = msg) do
     data
     |> Map.update!(:initializers, &Map.delete(&1, msg.guid))
-    |> Map.update!(:guid_subscribers, &Map.delete(&1, msg.guid))
+    |> clear_disposed_guid_subscribers(msg.guid)
   end
 
   defp handle_dispose(data, _msg), do: data
 
-  defp notify_subscribers(data, msg) when is_map_key(data.guid_subscribers, msg.guid) do
-    for pid <- Map.fetch!(data.guid_subscribers, msg.guid), do: Kernel.send(pid, {:playwright_msg, msg})
+  defp notify_subscribers(data, %{guid: guid} = msg) do
+    for pid <- :pg.get_members(data.config.pg_scope, pg_group(guid)) do
+      Kernel.send(pid, {:playwright_msg, msg})
+    end
+
     data
   end
 
   defp notify_subscribers(data, _msg), do: data
+
+  defp pg_group(guid), do: {:guid, guid}
+
+  defp clear_disposed_guid_subscribers(data, guid) do
+    group = pg_group(guid)
+
+    for pid <- :pg.get_local_members(data.config.pg_scope, group) do
+      _ = :pg.leave(data.config.pg_scope, group, pid)
+    end
+
+    data
+  end
 
   defp log_level_from_js("error"), do: :error
   defp log_level_from_js("debug"), do: :debug

@@ -51,17 +51,21 @@ defmodule PlaywrightEx.Supervisor do
   @impl true
   def init(config) do
     connection_name = connection_name(config.name)
+    pg_scope = pg_scope_name(config.name)
     {transport_child, transport} = transport_child_spec(config, connection_name)
+    pg_child = %{id: pg_scope, start: {:pg, :start_link, [pg_scope]}}
 
     children = [
       transport_child,
+      pg_child,
       {Connection,
        [
          [
            name: connection_name,
            timeout: config.timeout,
            js_logger: config.js_logger,
-           transport: transport
+           transport: transport,
+           pg_scope: pg_scope
          ]
        ]}
     ]
@@ -122,5 +126,9 @@ defmodule PlaywrightEx.Supervisor do
     existing_params = URI.decode_query(uri.query || "")
     merged_params = Map.merge(default_params, existing_params)
     URI.to_string(%{uri | query: URI.encode_query(merged_params)})
+  end
+
+  defp pg_scope_name(supervisor_name) do
+    Module.concat(supervisor_name, "PgScope")
   end
 end

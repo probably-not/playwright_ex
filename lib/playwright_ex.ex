@@ -50,7 +50,7 @@ defmodule PlaywrightEx do
     )
 
   @doc """
-  Subscribe to playwright responses concerning a resource, identified by its `guid`, or its descendants.
+  Subscribe to playwright responses concerning a resource, identified by its `guid`.
   Messages in the format `{:playwright_msg, %{} = msg}` will be sent to `pid`.
 
   ## Options
@@ -63,6 +63,19 @@ defmodule PlaywrightEx do
     opts = NimbleOptions.validate!(opts, @subscribe_schema)
     pid = Keyword.get(opts, :pid, self())
     Connection.subscribe(opts[:connection], pid, guid)
+  end
+
+  @doc """
+  Unsubscribe from playwright responses concerning a resource, identified by its `guid`.
+
+  ## Options
+  #{NimbleOptions.docs(subscribe_schema)}
+  """
+  @spec unsubscribe(guid(), [subscribe_opt()]) :: :ok
+  def unsubscribe(guid, opts \\ []) do
+    opts = NimbleOptions.validate!(opts, @subscribe_schema)
+    pid = Keyword.get(opts, :pid, self())
+    Connection.unsubscribe(opts[:connection], pid, guid)
   end
 
   send_schema =
