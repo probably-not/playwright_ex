@@ -10,6 +10,8 @@ defmodule PlaywrightEx.Page do
 
   alias PlaywrightEx.ChannelResponse
   alias PlaywrightEx.Connection
+  alias PlaywrightEx.Frame
+  alias PlaywrightEx.Serialization
 
   schema =
     NimbleOptions.new!(
@@ -214,6 +216,68 @@ defmodule PlaywrightEx.Page do
     NimbleOptions.new!(
       connection: PlaywrightEx.Channel.connection_opt(),
       timeout: PlaywrightEx.Channel.timeout_opt(),
+      url: [
+        type: :any,
+        required: true,
+        doc: "Expected URL as a string, `Regex`, or predicate function `fn URI.t() -> boolean end`."
+      ],
+      is_not: [
+        type: :boolean,
+        default: false,
+        doc: "Whether to negate the expectation."
+      ],
+      ignore_case: [
+        type: :boolean,
+        default: false,
+        doc: "Whether URL comparison should ignore case."
+      ]
+    )
+
+  @doc group: :composed
+  @doc """
+  Expects page URL to match the provided expectation.
+
+  This library exposes URL assertions as `Page.expect_url/2`.
+
+  In the official Playwright JavaScript API, URL assertions are written as
+  `await expect(page).toHaveURL(...)`. That matcher API is not exposed here.
+
+  Matching strategy:
+  - String/`Regex`: delegates to `PlaywrightEx.Frame.expect/2` with expression `"to.have.url"`, which uses server-side
+    assertion polling (`is_not` is passed through for retry semantics).
+  - Predicate function: delegates to `PlaywrightEx.Frame.wait_for_url/2`, which is navigation-event based
+    (waits on `:navigated` + lifecycle events rather than polling page JavaScript).
+
+  Returns `true` when the expectation is satisfied and `false` otherwise.
+
+  Reference: https://playwright.dev/docs/api/class-pageassertions#page-assertions-to-have-url
+
+  ## Options
+  #{NimbleOptions.docs(schema)}
+  """
+  @schema schema
+  @type expect_url_opt :: unquote(NimbleOptions.option_typespec(schema))
+  @spec expect_url(PlaywrightEx.guid(), [expect_url_opt() | PlaywrightEx.unknown_opt()]) ::
+          {:ok, boolean()} | {:error, any()}
+  def expect_url(page_id, opts \\ []) do
+    {connection, opts} = opts |> PlaywrightEx.Channel.validate_known!(@schema) |> Keyword.pop!(:connection)
+    {timeout, opts} = Keyword.pop!(opts, :timeout)
+    url_expectation = Keyword.fetch!(opts, :url)
+    is_not? = Keyword.fetch!(opts, :is_not)
+    ignore_case? = Keyword.fetch!(opts, :ignore_case)
+    frame_id = main_frame_id!(connection, page_id)
+
+    if is_function(url_expectation, 1) do
+      expect_url_with_predicate(frame_id, url_expectation, is_not?, ignore_case?, timeout, connection)
+    else
+      expect_url_with_text_matcher(frame_id, url_expectation, is_not?, ignore_case?, timeout, connection)
+    end
+  end
+
+  schema =
+    NimbleOptions.new!(
+      connection: PlaywrightEx.Channel.connection_opt(),
+      timeout: PlaywrightEx.Channel.timeout_opt(),
       source: [
         type: :string,
         required: true,
@@ -252,5 +316,78 @@ defmodule PlaywrightEx.Page do
     connection
     |> Connection.send(%{guid: context_id, method: :addInitScript, params: Map.new(opts)}, timeout)
     |> ChannelResponse.unwrap(& &1)
+  end
+
+  defp main_frame_id!(connection, page_id) do
+    page_initializer = Connection.initializer!(connection, page_id)
+    page_initializer.main_frame.guid
+  end
+
+  defp expect_url_with_predicate(frame_id, predicate, is_not?, ignore_case?, timeout, connection) do
+    matcher = fn uri ->
+      uri = maybe_downcase_uri(uri, ignore_case?)
+      matches? = predicate.(uri)
+      matches? != is_not?
+    end
+
+    case Frame.wait_for_url(frame_id, connection: connection, timeout: timeout, url: matcher) do
+      {:ok, _} -> {:ok, true}
+      {:error, _} -> {:ok, false}
+    end
+  end
+
+  defp expect_url_with_text_matcher(frame_id, url_expectation, is_not?, ignore_case?, timeout, connection) do
+    with {:ok, expected_text} <- serialize_expected_url(url_expectation, ignore_case?),
+         {:ok, matches} <-
+           Frame.expect(frame_id,
+             connection: connection,
+             timeout: timeout,
+             expression: "to.have.url",
+             is_not: is_not?,
+             expected_text: [expected_text]
+           ) do
+      {:ok, matches != is_not?}
+    end
+  end
+
+  defp serialize_expected_url(value, ignore_case?) when is_binary(value) do
+    {:ok,
+     %{
+       string: maybe_downcase_string(value, ignore_case?),
+       ignore_case: ignore_case?
+     }}
+  end
+
+  defp serialize_expected_url(%Regex{source: source, opts: opts}, ignore_case?) do
+    regex_flags =
+      opts
+      |> Serialization.regex_flags_for_protocol()
+      |> maybe_add_regex_ignore_case(ignore_case?)
+
+    {:ok,
+     %{
+       regex_source: source,
+       regex_flags: regex_flags,
+       ignore_case: ignore_case?
+     }}
+  end
+
+  defp serialize_expected_url(_value, _ignore_case?) do
+    {:error, %{message: "url must be a string, Regex, or function with arity 1"}}
+  end
+
+  defp maybe_downcase_uri(uri, false), do: uri
+
+  defp maybe_downcase_uri(uri, true) do
+    uri |> URI.to_string() |> String.downcase() |> URI.parse()
+  end
+
+  defp maybe_downcase_string(value, false), do: value
+  defp maybe_downcase_string(value, true), do: String.downcase(value)
+
+  defp maybe_add_regex_ignore_case(opts, false), do: opts
+
+  defp maybe_add_regex_ignore_case(opts, true) do
+    if String.contains?(opts, "i"), do: opts, else: opts <> "i"
   end
 end

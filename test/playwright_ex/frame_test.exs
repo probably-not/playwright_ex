@@ -291,6 +291,77 @@ defmodule PlaywrightEx.FrameTest do
     end
   end
 
+  describe "wait_for_load_state/2" do
+    test "resolves when load state is already reached", %{frame: frame} do
+      {:ok, _} = Frame.goto(frame.guid, url: "about:blank", timeout: @timeout)
+
+      assert {:ok, nil} = Frame.wait_for_load_state(frame.guid, state: "load", timeout: @timeout)
+      assert {:ok, nil} = Frame.wait_for_load_state(frame.guid, state: "domcontentloaded", timeout: @timeout)
+    end
+  end
+
+  describe "wait_for_url/2" do
+    test "waits for matching URL on navigation events", %{frame: frame} do
+      {:ok, _} = Frame.goto(frame.guid, url: "about:blank", timeout: @timeout)
+
+      eval(frame.guid, """
+      () => {
+        setTimeout(() => { window.location.hash = '#target'; }, 100);
+      }
+      """)
+
+      assert {:ok, nil} = Frame.wait_for_url(frame.guid, url: "about:blank#target", timeout: @timeout)
+    end
+
+    test "supports glob URL matching", %{frame: frame} do
+      {:ok, _} = Frame.goto(frame.guid, url: "about:blank", timeout: @timeout)
+
+      eval(frame.guid, """
+      () => {
+        setTimeout(() => { window.location.hash = '#/users/42/profile'; }, 100);
+      }
+      """)
+
+      assert {:ok, nil} =
+               Frame.wait_for_url(frame.guid, url: "about:blank#/users/*/profile", timeout: @timeout)
+    end
+
+    test "supports Regex URL matching", %{frame: frame} do
+      {:ok, _} = Frame.goto(frame.guid, url: "about:blank", timeout: @timeout)
+
+      eval(frame.guid, """
+      () => {
+        setTimeout(() => { window.location.hash = '#order-123'; }, 100);
+      }
+      """)
+
+      assert {:ok, nil} = Frame.wait_for_url(frame.guid, url: ~r/about:blank#order-\d+/, timeout: @timeout)
+    end
+
+    test "supports function URL matching", %{frame: frame} do
+      {:ok, _} = Frame.goto(frame.guid, url: "about:blank", timeout: @timeout)
+
+      eval(frame.guid, """
+      () => {
+        setTimeout(() => { window.location.hash = '#/dashboard'; }, 100);
+      }
+      """)
+
+      matcher = fn uri -> uri.fragment == "/dashboard" end
+      assert {:ok, nil} = Frame.wait_for_url(frame.guid, url: matcher, timeout: @timeout)
+    end
+
+    test "waits for load state when URL already matches", %{frame: frame} do
+      {:ok, _} = Frame.goto(frame.guid, url: "about:blank", timeout: @timeout)
+      assert {:ok, nil} = Frame.wait_for_url(frame.guid, url: "about:blank", wait_until: "load", timeout: @timeout)
+    end
+
+    test "returns timeout error when URL never matches", %{frame: frame} do
+      {:ok, _} = Frame.goto(frame.guid, url: "about:blank", timeout: @timeout)
+      assert {:error, _} = Frame.wait_for_url(frame.guid, url: "about:blank#missing", timeout: 10)
+    end
+  end
+
   describe "set_input_files" do
     test "can upload files", %{frame: frame} do
       {:ok, _} = Frame.goto(frame.guid, url: "about:blank", timeout: @timeout)

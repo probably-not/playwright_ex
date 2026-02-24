@@ -235,6 +235,7 @@ defmodule PlaywrightEx.Tracing do
       ]
     )
 
+  @doc group: :composed
   @doc """
   Wraps a function call in a named trace group.
 

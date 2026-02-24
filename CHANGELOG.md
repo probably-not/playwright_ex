@@ -10,9 +10,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `PlaywrightEx.Frame`: `is_visible/2`, `is_checked/2`, `is_disabled/2`, `is_enabled/2`, `is_editable/2`, `get_attribute/2`, `input_value/2`, `text_content/2`, `inner_text/2`, `focus/2`, `dispatch_event/2`, `wait_for_function/2`. #22, [@oliver-kriska]
 - `PlaywrightEx.Frame.wait_for_selector/2`: `state` and `strict` options. #22, [@oliver-kriska]
 - `PlaywrightEx.unsubscribe/2` and connection-level unsubscribe support.
+- `PlaywrightEx.Frame.wait_for_load_state/2` and `PlaywrightEx.Frame.wait_for_url/2` with event-based navigation waiting.
+- Per-frame event recorder process to keep waiter subscriptions continuous across waits.
+- `PlaywrightEx.Page.expect_url/2` for explicit URL expectations on pages.
+- Regex support in argument serialization/deserialization using protocol-native `{r: %{p, f}}` values.
 ### Fixed
 - `PlaywrightEx.Frame.wait_for_selector/2`: crash when `state` is `"hidden"` or `"detached"` (result has no element). #22
 - `PlaywrightEx.BrowserContext.add_init_script/2` and `PlaywrightEx.Page.add_init_script/2`: use `source` parameter name required by Playwright protocol (instead of `content`).
+- URL regex expectations now send Playwright-compatible string regex flags.
+- Frame waiter exit errors preserve normalized reason atoms in error metadata.
 
 ## [0.4.0] 2026-02-09
 ### Added

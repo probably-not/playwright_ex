@@ -70,5 +70,34 @@ defmodule PlaywrightEx.SerializationTest do
       # Atom keys become string keys after round-trip
       assert deserialized == %{"foo" => "bar", "baz" => 123}
     end
+
+    test "deserializes protocol regex values and ignores unsupported JS-only flags" do
+      value = %{r: %{p: "abc", f: "gimsyu"}}
+
+      assert %Regex{source: "abc"} = regex = Serialization.deserialize_arg(value)
+      assert :caseless in regex.opts
+      assert :multiline in regex.opts
+      assert :dotall in regex.opts
+      assert :unicode in regex.opts
+    end
+
+    test "round-trips regex values semantically" do
+      for value <- [~r/abc/, ~r/abc/imsu] do
+        serialized = Serialization.serialize_arg(value)
+        deserialized = Serialization.deserialize_arg(serialized.value)
+
+        assert %Regex{} = deserialized
+        assert deserialized.source == value.source
+
+        assert Serialization.regex_flags_for_protocol(deserialized.opts) ==
+                 Serialization.regex_flags_for_protocol(value.opts)
+      end
+    end
+  end
+
+  describe "regex_flags_for_protocol/1" do
+    test "maps Elixir regex opts to JS protocol flags" do
+      assert Serialization.regex_flags_for_protocol([:caseless, :multiline, :dotall, :unicode, :ucp]) == "imsu"
+    end
   end
 end

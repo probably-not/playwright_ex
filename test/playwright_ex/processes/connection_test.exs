@@ -60,6 +60,8 @@ defmodule PlaywrightEx.ConnectionTest do
     Connection.subscribe(name, self(), "guid-4")
 
     Connection.handle_playwright_msg(name, %{method: :__dispose__, guid: "guid-4"})
+    assert_receive {:playwright_msg, %{guid: "guid-4", method: :__dispose__}}
+
     Connection.handle_playwright_msg(name, %{guid: "guid-4", method: :navigated, params: %{url: "about:blank"}})
 
     refute_receive {:playwright_msg, %{guid: "guid-4"}}

@@ -10,6 +10,7 @@ defmodule PlaywrightEx.Frame do
 
   alias PlaywrightEx.ChannelResponse
   alias PlaywrightEx.Connection
+  alias PlaywrightEx.FrameEventRecorder
   alias PlaywrightEx.Serialization
 
   schema =
@@ -1205,5 +1206,126 @@ defmodule PlaywrightEx.Frame do
     connection
     |> Connection.send(%{guid: frame_id, method: :wait_for_function, params: params}, timeout)
     |> ChannelResponse.unwrap(& &1)
+  end
+
+  schema =
+    NimbleOptions.new!(
+      connection: PlaywrightEx.Channel.connection_opt(),
+      timeout: PlaywrightEx.Channel.timeout_opt(),
+      state: [
+        type: {:in, ["domcontentloaded", "load", "networkidle", "commit"]},
+        default: "load",
+        doc: ~s{Load state to wait for: "domcontentloaded", "load" (default), "networkidle", or "commit".}
+      ]
+    )
+
+  @doc group: :composed
+  @doc """
+  Waits for the frame to reach the requested load state.
+
+  This uses a navigation-event model:
+  - listens for frame/page lifecycle events (`:loadstate`, `:navigated`, close/crash/dispose),
+  - resolves when `state` is reached for the tracked frame.
+
+  This is event-based waiting, not JavaScript polling. It does not repeatedly evaluate
+  `document.readyState` in page context, so it remains valid across navigations and document changes.
+
+  Reference: https://playwright.dev/docs/api/class-frame#frame-wait-for-load-state
+
+  ## Options
+  #{NimbleOptions.docs(schema)}
+  """
+  @schema schema
+  @type wait_for_load_state_opt :: unquote(NimbleOptions.option_typespec(schema))
+  @spec wait_for_load_state(PlaywrightEx.guid(), [wait_for_load_state_opt() | PlaywrightEx.unknown_opt()]) ::
+          {:ok, any()} | {:error, any()}
+  def wait_for_load_state(frame_id, opts \\ []) do
+    {connection, opts} = opts |> PlaywrightEx.Channel.validate_known!(@schema) |> Keyword.pop!(:connection)
+    {timeout, opts} = Keyword.pop!(opts, :timeout)
+    wait_state = opts |> Keyword.fetch!(:state) |> normalize_wait_state()
+
+    FrameEventRecorder.wait_for_load_state(connection, frame_id, wait_state, timeout)
+  end
+
+  schema =
+    NimbleOptions.new!(
+      connection: PlaywrightEx.Channel.connection_opt(),
+      timeout: PlaywrightEx.Channel.timeout_opt(),
+      url: [
+        type: :any,
+        required: true,
+        doc:
+          "URL matcher to wait for. Supports a string (exact or glob `*`/`**`), `Regex`, or a function `fn URI.t() -> boolean end`."
+      ],
+      wait_until: [
+        type: {:in, ["domcontentloaded", "load", "networkidle", "commit"]},
+        default: "load",
+        doc: ~s{When to consider operation succeeded: "load" (default), "domcontentloaded", "networkidle", or "commit".}
+      ]
+    )
+
+  @doc group: :composed
+  @doc """
+  Waits for the frame to navigate to a URL matching `url`.
+
+  Behavior is event-based:
+  - If current URL already matches, waits only for `wait_until` load state.
+  - Otherwise waits for a matching navigation event, then waits for `wait_until`.
+  - URL and lifecycle state are tracked from protocol navigation/load events.
+
+  This does not poll `window.location.href` in page JavaScript. It remains robust when
+  document/context is replaced during navigation.
+
+  Reference: https://playwright.dev/docs/api/class-frame#frame-wait-for-url
+
+  ## Options
+  #{NimbleOptions.docs(schema)}
+  """
+  @schema schema
+  @type wait_for_url_opt :: unquote(NimbleOptions.option_typespec(schema))
+  @spec wait_for_url(PlaywrightEx.guid(), [wait_for_url_opt() | PlaywrightEx.unknown_opt()]) ::
+          {:ok, any()} | {:error, any()}
+  def wait_for_url(frame_id, opts \\ []) do
+    {connection, opts} = opts |> PlaywrightEx.Channel.validate_known!(@schema) |> Keyword.pop!(:connection)
+    {timeout, opts} = Keyword.pop!(opts, :timeout)
+    wait_state = opts |> Keyword.fetch!(:wait_until) |> normalize_wait_state()
+
+    with {:ok, url_matcher} <- build_url_matcher(opts[:url]) do
+      FrameEventRecorder.wait_for_url(connection, frame_id, url_matcher, wait_state, timeout)
+    end
+  end
+
+  defp normalize_wait_state(state) when is_atom(state), do: normalize_wait_state(Atom.to_string(state))
+  defp normalize_wait_state(state), do: state
+
+  defp build_url_matcher(%Regex{} = regex), do: {:ok, &Regex.match?(regex, &1)}
+
+  defp build_url_matcher(matcher) when is_function(matcher, 1) do
+    {:ok,
+     fn url ->
+       matcher.(URI.parse(url))
+     end}
+  end
+
+  defp build_url_matcher(matcher) when is_binary(matcher) do
+    regex = matcher |> glob_to_regex() |> Regex.compile!()
+    {:ok, &Regex.match?(regex, &1)}
+  end
+
+  defp build_url_matcher(_matcher) do
+    {:error, %{message: "url must be a string, Regex, or function with arity 1"}}
+  end
+
+  defp glob_to_regex(glob) do
+    converted_glob =
+      glob
+      |> String.split("**", trim: false)
+      |> Enum.map_join(".*", fn part ->
+        part
+        |> String.split("*", trim: false)
+        |> Enum.map_join("[^/]*", &Regex.escape/1)
+      end)
+
+    "^#{converted_glob}$"
   end
 end

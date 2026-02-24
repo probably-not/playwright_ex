@@ -8,6 +8,7 @@ defmodule PlaywrightEx.Serialization do
 
   def deep_key_camelize(input), do: deep_key_transform(input, &camelize/1)
   def deep_key_underscore(input), do: deep_key_transform(input, &underscore/1)
+  def regex_flags_for_protocol(opts), do: do_regex_flags_for_protocol(opts)
 
   @doc """
   Serializes an Elixir value to the Playwright protocol format.
@@ -22,6 +23,7 @@ defmodule PlaywrightEx.Serialization do
   defp do_serialize_arg(n) when is_number(n), do: %{n: n}
   defp do_serialize_arg(s) when is_binary(s), do: %{s: s}
   defp do_serialize_arg(a) when is_atom(a), do: %{s: to_string(a)}
+  defp do_serialize_arg(%Regex{source: source, opts: opts}), do: %{r: %{p: source, f: do_regex_flags_for_protocol(opts)}}
 
   defp do_serialize_arg(list) when is_list(list) do
     %{a: Enum.map(list, &do_serialize_arg/1)}
@@ -53,6 +55,9 @@ defmodule PlaywrightEx.Serialization do
 
       %{o: object} ->
         Map.new(object, fn item -> {item.k, deserialize_arg(item.v)} end)
+
+      %{r: %{p: pattern, f: flags}} ->
+        protocol_regex_to_elixir_regex(pattern, flags)
 
       %{s: string} ->
         string
@@ -100,4 +105,32 @@ defmodule PlaywrightEx.Serialization do
 
   defp to_lower_char(char) when char in ?A..?Z, do: char + 32
   defp to_lower_char(char), do: char
+
+  defp do_regex_flags_for_protocol(opts) when is_binary(opts), do: canonicalize_protocol_regex_flags(opts)
+
+  defp do_regex_flags_for_protocol(opts) when is_list(opts) do
+    opts
+    |> Enum.reduce("", fn opt, acc -> acc <> regex_flag_for_elixir_opt(opt) end)
+    |> canonicalize_protocol_regex_flags()
+  end
+
+  defp regex_flag_for_elixir_opt(:caseless), do: "i"
+  defp regex_flag_for_elixir_opt(:multiline), do: "m"
+  defp regex_flag_for_elixir_opt(:dotall), do: "s"
+  defp regex_flag_for_elixir_opt(:unicode), do: "u"
+  defp regex_flag_for_elixir_opt(:ucp), do: "u"
+  defp regex_flag_for_elixir_opt(_opt), do: ""
+
+  defp protocol_regex_to_elixir_regex(pattern, flags) when is_binary(pattern) and is_binary(flags) do
+    supported_flags = keep_supported_elixir_regex_flags(flags)
+    Regex.compile!(pattern, supported_flags)
+  end
+
+  defp keep_supported_elixir_regex_flags(flags), do: canonicalize_protocol_regex_flags(flags)
+
+  defp canonicalize_protocol_regex_flags(flags) do
+    Enum.reduce(["i", "m", "s", "u"], "", fn flag, acc ->
+      if String.contains?(flags, flag), do: acc <> flag, else: acc
+    end)
+  end
 end

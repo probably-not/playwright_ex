@@ -11,6 +11,8 @@ defmodule PlaywrightEx.Connection do
 
   import Kernel, except: [send: 2]
 
+  alias PlaywrightEx.FrameEventRecorder
+
   @timeout_grace_factor 1.5
   @min_genserver_timeout to_timeout(second: 1)
 
@@ -169,7 +171,8 @@ defmodule PlaywrightEx.Connection do
   end
 
   def started(:cast, {:playwright_msg, msg}, data) do
-    {:keep_state, data |> handle_create(msg) |> notify_subscribers(msg) |> handle_dispose(msg)}
+    {:keep_state,
+     data |> handle_create(msg) |> maybe_start_frame_event_recorder(msg) |> notify_subscribers(msg) |> handle_dispose(msg)}
   end
 
   defp handle_create(data, %{method: :__create__} = msg) do
@@ -178,9 +181,24 @@ defmodule PlaywrightEx.Connection do
 
   defp handle_create(data, _msg), do: data
 
+  defp maybe_start_frame_event_recorder(data, %{
+         method: :__create__,
+         params: %{guid: guid, initializer: %{url: _url, load_states: _load_states} = initializer}
+       }) do
+    _ = FrameEventRecorder.ensure_started(data.config.name, guid, initializer)
+    data
+  end
+
+  defp maybe_start_frame_event_recorder(data, %{method: :__create__}) do
+    data
+  end
+
+  defp maybe_start_frame_event_recorder(data, _msg), do: data
+
   defp handle_dispose(data, %{method: :__dispose__} = msg) do
     data
     |> Map.update!(:initializers, &Map.delete(&1, msg.guid))
+    |> stop_disposed_frame_event_recorder(msg.guid)
     |> clear_disposed_guid_subscribers(msg.guid)
   end
 
@@ -205,6 +223,11 @@ defmodule PlaywrightEx.Connection do
       _ = :pg.leave(data.config.pg_scope, group, pid)
     end
 
+    data
+  end
+
+  defp stop_disposed_frame_event_recorder(data, guid) do
+    _ = FrameEventRecorder.terminate_frame(data.config.name, guid)
     data
   end
 

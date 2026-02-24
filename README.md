@@ -57,6 +57,10 @@ Alternatively, PlaywrightEx can connect to a remote playwright server:
         ws_endpoint: "ws://localhost:3000?browser=chromium"
       )
 
+## API Layers
+Most channel functions are thin protocol wrappers.
+In ExDoc, composed helpers are grouped under `Client-Composed Functions`.
+
 ## References
 - Code extracted from [phoenix_test_playwright](https://hexdocs.pm/phoenix_test_playwright).
 - Inspired by [playwright-elixir](https://hexdocs.pm/playwright).

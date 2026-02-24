@@ -84,6 +84,7 @@ defmodule PlaywrightEx.MixProject do
       filter_modules: fn _, metadata ->
         not String.contains?(to_string(metadata.source_path), "/processes/")
       end,
+      default_group_for_doc: &group_for_doc/1,
       groups_for_modules: [
         Channels:
           if File.exists?("lib") do
@@ -94,6 +95,20 @@ defmodule PlaywrightEx.MixProject do
         Other: [PlaywrightEx.JsLogger, PlaywrightEx.Supervisor]
       ]
     ]
+  end
+
+  defp group_for_doc(metadata) do
+    case metadata[:group] do
+      :composed ->
+        %{
+          title: "Client-Composed Functions",
+          description:
+            "Helpers composed in this client from multiple channel operations/events, primarily to keep API parity with other Playwright clients where no single server method maps directly."
+        }
+
+      group ->
+        group
+    end
   end
 
   defp aliases do
