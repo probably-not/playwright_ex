@@ -345,4 +345,82 @@ defmodule PlaywrightEx.BrowserContext do
     )
     |> ChannelResponse.unwrap(& &1)
   end
+
+  schema =
+    NimbleOptions.new!(
+      connection: PlaywrightEx.Channel.connection_opt(),
+      timeout: PlaywrightEx.Channel.timeout_opt(),
+      indexedDB: [
+        type: :boolean,
+        default: false,
+        doc: """
+        Set to true to include IndexedDB in the storage state snapshot.
+        If your application uses IndexedDB to store authentication tokens, like Firebase Authentication, enable this.
+        """
+      ]
+    )
+
+  @doc """
+  Returns storage state for this browser context, contains current cookies, local storage snapshot and IndexedDB snapshot.
+
+  Reference: https://playwright.dev/docs/api/class-browsercontext#browser-context-storage-state
+
+  ## Options
+  #{NimbleOptions.docs(schema)}
+  """
+  @schema schema
+  @type storage_state_opt :: unquote(NimbleOptions.option_typespec(schema))
+  @spec storage_state(PlaywrightEx.guid(), [storage_state_opt() | PlaywrightEx.unknown_opt()]) ::
+          {:ok, [map()]} | {:error, any()}
+  def storage_state(context_id, opts \\ []) do
+    {connection, opts} = opts |> PlaywrightEx.Channel.validate_known!(@schema) |> Keyword.pop!(:connection)
+    {timeout, opts} = Keyword.pop!(opts, :timeout)
+
+    connection
+    |> Connection.send(%{guid: context_id, method: :storage_state, params: Map.new(opts)}, timeout)
+    |> ChannelResponse.unwrap(&Function.identity/1)
+  end
+
+  schema =
+    NimbleOptions.new!(
+      connection: PlaywrightEx.Channel.connection_opt(),
+      timeout: PlaywrightEx.Channel.timeout_opt(),
+      cookies: [
+        type: {:list, :any},
+        default: [],
+        doc: """
+        List of cookies to set as the current cookies on the context.
+        Defaults to an empty list to clear all cookies on the context.
+        """
+      ],
+      origins: [
+        type: {:list, :any},
+        default: [],
+        doc: """
+        List of origins and their local storage to set as the current local storage data on the context.
+        Defaults to an empty list to clear all local storage on the context.
+        """
+      ]
+    )
+
+  @doc """
+  Clears the existing cookies, local storage and IndexedDB entries for all origins and sets the new storage state.
+
+  Reference: https://playwright.dev/docs/api/class-browsercontext#browser-context-set-storage-state
+
+  ## Options
+  #{NimbleOptions.docs(schema)}
+  """
+  @schema schema
+  @type set_storage_state_opt :: unquote(NimbleOptions.option_typespec(schema))
+  @spec set_storage_state(PlaywrightEx.guid(), [set_storage_state_opt() | PlaywrightEx.unknown_opt()]) ::
+          {:ok, any()} | {:error, any()}
+  def set_storage_state(context_id, opts \\ []) do
+    {connection, opts} = opts |> PlaywrightEx.Channel.validate_known!(@schema) |> Keyword.pop!(:connection)
+    {timeout, opts} = Keyword.pop!(opts, :timeout)
+
+    connection
+    |> Connection.send(%{guid: context_id, method: :set_storage_state, params: %{storageState: Map.new(opts)}}, timeout)
+    |> ChannelResponse.unwrap(& &1)
+  end
 end
