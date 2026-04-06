@@ -49,13 +49,8 @@ defmodule PlaywrightEx.PortTransport do
   end
 
   def init(%{executable: executable, env: env} = opts) when map_size(env) > 0 do
-    env =
-      env
-      |> Map.new(fn {k, v} -> {maybe_charlist(k), maybe_charlist(v)} end)
-      |> Enum.to_list()
-
+    env = Enum.map(env, fn {k, v} -> {maybe_charlist(k), maybe_charlist(v)} end)
     port = Port.open({:spawn_executable, executable}, [:binary, :stderr_to_stdout, {:args, ["run-driver"]}, {:env, env}])
-
     connection_name = Map.get(opts, :connection_name, Connection)
     {:ok, %__MODULE__{port: port, connection_name: connection_name}}
   end
