@@ -11,6 +11,7 @@ defmodule PlaywrightEx.Supervisor do
     If provided, uses WebSocket transport. Otherwise uses local Port.
     If no browser param is provided, `chromium` is used by default.
   - `:executable` - Path to playwright CLI (only for Port transport)
+  - `:env` - A `%{String.t() => String.t()}` map of environment variables to set for the browser instance (only for Port transport).
   - `:timeout` - Connection timeout
   - `:js_logger` - Module for logging JS console messages
   - `:name` - Optional name for this supervisor instance. Defaults to `PlaywrightEx.Supervisor`.
@@ -43,7 +44,8 @@ defmodule PlaywrightEx.Supervisor do
         :fail_on_unknown_opts,
         executable: "playwright",
         js_logger: nil,
-        name: __MODULE__
+        name: __MODULE__,
+        env: %{}
       ])
 
     Supervisor.start_link(__MODULE__, Map.new(opts), name: opts[:name])
@@ -100,12 +102,12 @@ defmodule PlaywrightEx.Supervisor do
     {child_spec, {WebSocketTransport, transport_name}}
   end
 
-  defp transport_child_spec(%{executable: executable, name: name}, connection_name) do
+  defp transport_child_spec(%{executable: executable, name: name, env: env}, connection_name) do
     executable = validate_executable!(executable)
 
     transport_name = Module.concat(name, "PortTransport")
 
-    child_spec = {PortTransport, executable: executable, name: transport_name, connection_name: connection_name}
+    child_spec = {PortTransport, executable: executable, name: transport_name, connection_name: connection_name, env: env}
     {child_spec, {PortTransport, transport_name}}
   end
 
