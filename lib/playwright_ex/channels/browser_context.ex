@@ -420,7 +420,7 @@ defmodule PlaywrightEx.BrowserContext do
     {timeout, opts} = Keyword.pop!(opts, :timeout)
 
     connection
-    |> Connection.send(%{guid: context_id, method: :set_storage_state, params: Map.new(opts)}, timeout)
+    |> Connection.send(%{guid: context_id, method: :set_storage_state, params: %{storageState: Map.new(opts)}}, timeout)
     |> ChannelResponse.unwrap(& &1)
   end
 end
