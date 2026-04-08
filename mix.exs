@@ -1,22 +1,25 @@
 defmodule PlaywrightEx.MixProject do
   use Mix.Project
 
-  @version "0.5.0"
-  @source_url "https://github.com/ftes/playwright_ex"
+  @version "0.5.0-fork.2"
+  @source_url "https://github.com/probably-not/playwright_ex"
+  @upstream_url "https://github.com/ftes/playwright_ex"
   @description """
-  Elixir client for the Playwright node.js driver.
+  Fork of playwright_ex with unreleased upstream fixes required by LiveLoad.
+  Will be retired once PRs are merged and a new upstream version is published.
+  Upstream: #{@upstream_url}
   """
 
   def project do
     [
-      app: :playwright_ex,
+      app: :live_load_forked_playwright_ex,
       version: @version,
       description: @description,
       elixir: "~> 1.18",
       deps: deps(),
       elixirc_paths: elixirc_paths(Mix.env()),
       package: package(),
-      name: "PlaywrightEx",
+      name: "LiveLoad Forked PlaywrightEx",
       source_url: @source_url,
       docs: docs(),
       aliases: aliases(),
@@ -55,7 +58,10 @@ defmodule PlaywrightEx.MixProject do
   defp package do
     [
       licenses: ["MIT"],
-      links: %{"Github" => @source_url},
+      links: %{
+        "Fork" => @source_url,
+        "Upstream" => @upstream_url
+      },
       exclude_patterns: ~w(assets/node_modules priv/static/assets priv/plts)
     ]
   end
