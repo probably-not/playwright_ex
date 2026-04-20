@@ -31,7 +31,7 @@ defmodule PlaywrightEx.PortTransport do
   Start the PortTransport and link it to the connection process.
   """
   def start_link(opts) do
-    opts = Keyword.validate!(opts, [:executable, :name, :connection_name, :env])
+    opts = Keyword.validate!(opts, [:executable, :name, :connection_name, env: %{}])
     name = Keyword.get(opts, :name, @default_name)
     GenServer.start_link(__MODULE__, Map.new(opts), name: name)
   end
